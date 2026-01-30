@@ -14,3 +14,19 @@ U8PL7CR4K: # Kyrre
   friday:
     text: "Hjemmekontor"
     emoji: ":small_house_hidden_dino:"
+U0148GKNAJK: 
+  monday:
+    text: "Hjemmekontor"
+    emoji: ":home-dolly:"
+  tuesday:
+    text: "Hjemmekontor"
+    emoji: ":home-dolly:"
+  wednesday:
+    text: "Kontoret"
+    emoji: ":fya1:"
+  thursday:
+    text: "Kontoret"
+    emoji: ":fya1:"
+  friday:
+    text: "Hjemmekontor"
+    emoji: ":home-dolly:"
