@@ -1,0 +1,16 @@
+name: Lint YAML
+
+on:
+  pull_request:
+    paths:
+      - 'status.yaml'
+      - '.yamllint'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - name: YAML Lint
+        run: yamllint -c .yamllint .
