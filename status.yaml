@@ -100,3 +100,20 @@ D03SMP8MHFF: # Kristian
   friday:
     text: "I Fyrstikkalléen, A2"
     emoji: ":fyrstikkalle-lys:"
+
+U017URKMH0S: # Caroline
+  monday:
+    text: "Hjemmekontor"
+    emoji: ":house_with_garden:"
+  tuesday:
+    text: "I Fyrstikkalléen, A5"
+    emoji: ":fyrstikkalle-lys:"
+  wednesday:
+    text: "I Fyrstikkalléen, A5"
+    emoji: ":fyrstikkalle-lys:" 
+  thursday:
+    text: "I Fyrstikkalléen, A5"
+    emoji: ":fyrstikkalle-lys:" 
+  friday:
+    text: "Hjemmekontor"
+    emoji: ":house_with_garden:"
