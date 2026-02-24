@@ -24,7 +24,7 @@ class SlackClient
     profile = {
       status_text: text,
       status_emoji: emoji,
-      status_expiration: midnight_tonight
+      status_expiration: end_of_today
     }
 
     request.body = { profile: profile, user: user_id }.to_json
@@ -57,8 +57,8 @@ class SlackClient
 
   private
 
-  def midnight_tonight
+  def end_of_today
     now = Time.now.getlocal('+01:00')
-    Time.new(now.year, now.month, now.day + 1, 0, 0, 0, '+01:00').to_i
+    Time.new(now.year, now.month, now.day, 23, 59, 0, '+01:00').to_i
   end
 end
