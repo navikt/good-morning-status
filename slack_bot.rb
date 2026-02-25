@@ -173,7 +173,7 @@ post '/api/apply-statuses' do
   today = Date.today.strftime('%A').downcase
   user_ids = settings.valkey.all_user_ids
   settings.logger.info('apply_statuses', user_count: user_ids.size)
-  results = []
+  applied = 0
 
   user_ids.each do |user_id|
     schedule = settings.valkey.get_schedule(user_id)
@@ -185,13 +185,22 @@ post '/api/apply-statuses' do
     result = settings.slack.set_status(user_id, status_config['text'], status_config['emoji'])
 
     if result['ok']
-      settings.slack.send_dm(user_id, "God morgen! Status satt til #{status_config['emoji']} #{status_config['text']}")
+      settings.logger.info('set_status_response', user_id: user_id)
+
+      dm_result = settings.slack.send_dm(user_id, "God morgen! Status satt til #{status_config['emoji']} #{status_config['text']}")
+      if dm_result['ok']
+        settings.logger.info('send_dm_response', user_id: user_id)
+        applied += 1
+      else
+        settings.logger.error('send_dm_response', user_id: user_id, error: dm_result['error'])
+      end
+
       settings.logger.info('user_notified', user_id: user_id, status_text: status_config['text'])
-      results << { user_id: user_id, status: 'ok' }
     else
-      results << { user_id: user_id, status: 'error', error: result['error'] }
+
+      settings.logger.error('set_status_response', user_id: user_id, error: result['error'])
     end
   end
 
-  { applied: results.size, results: results }.to_json
+  { applied: applied, users: user_ids.size }.to_json
 end
