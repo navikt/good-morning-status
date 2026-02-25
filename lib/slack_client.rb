@@ -19,7 +19,7 @@ class SlackClient
 
     request = Net::HTTP::Post.new(uri)
     request['Authorization'] = "Bearer #{@token}"
-    request['Content-Type'] = 'application/json'
+    request['Content-Type'] = 'application/json; charset=utf-8'
 
     profile = {
       status_text: text,
@@ -40,7 +40,7 @@ class SlackClient
 
     request = Net::HTTP::Post.new(uri)
     request['Authorization'] = "Bearer #{@token}"
-    request['Content-Type'] = 'application/json'
+    request['Content-Type'] = 'application/json; charset=utf-8'
 
     request.body = {
       channel: user_id,
