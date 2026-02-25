@@ -5,13 +5,15 @@ on:
       - main
 
 jobs:
-  build_and_deploy:
-    name: Build, push and deploy
+  build:
+    name: Build and push
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
       actions: read
+    outputs:
+      image: ${{ steps.docker-build-push.outputs.image }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
         with:
@@ -27,10 +29,37 @@ jobs:
         id: docker-build-push
         with:
           team: the-g-team
-      - name: Deploy to Nais
+
+  deploy-app:
+    name: Deploy app and Valkey
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
+      - name: Deploy app and valkey
         uses: nais/deploy/actions/deploy@fa754451577294aae42872a69b888b3470478ec1 # ratchet:nais/deploy/actions/deploy@v2
         env:
           CLUSTER: prod-gcp
-          RESOURCE: .nais/app.yaml,.nais/job.yaml,.nais/valkey.yaml
-          WORKLOAD_IMAGE: ${{ steps.docker-build-push.outputs.image }}
+          RESOURCE: .nais/app.yaml,.nais/valkey.yaml
+          WORKLOAD_IMAGE: ${{ needs.build.outputs.image }}
+          WORKLOAD_NAME: god-morgen
+
+  deploy-job:
+    name: Deploy job
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
+      - name: Deploy job
+        uses: nais/deploy/actions/deploy@fa754451577294aae42872a69b888b3470478ec1 # ratchet:nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: prod-gcp
+          RESOURCE: .nais/job.yaml
+          WORKLOAD_IMAGE: ${{ needs.build.outputs.image }}
           WORKLOAD_NAME: god-morgen
