@@ -1,19 +1,14 @@
 [tools]
 ruby = "4.0.1"
-hadolint = "2.14.0"
 "go:github.com/sethvargo/ratchet" = "0.11.4"
 
 [tasks.lint]
 description = "Run all linters"
-depends = ["lint:ruby", "lint:dockerfile"]
+depends = ["lint:ruby"]
 
 [tasks."lint:ruby"]
 description = "Lint Ruby files with RuboCop"
 run = "bundle exec rubocop -a"
-
-[tasks."lint:dockerfile"]
-description = "Lint Dockerfile with Hadolint"
-run = "hadolint Dockerfile"
 
 [tasks."ci:ratchet"]
 description = "Pin GitHub Actions versions"
