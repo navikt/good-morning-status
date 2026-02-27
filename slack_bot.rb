@@ -11,7 +11,7 @@ require_relative 'lib/json_logger'
 
 set :port, 4567
 set :valkey, ValkeyClient.new
-set :slack, SlackClient.new(ENV.fetch('SLACK_BOT_TOKEN', nil))
+set :slack, SlackClient.new(ENV.fetch('SLACK_USER_TOKEN', 'SLACK_BOT_TOKEN', nil))
 set :logger, JsonLogger.new
 
 post '/slack/interactions' do
@@ -196,8 +196,6 @@ post '/api/apply-statuses' do
       else
         settings.logger.error('send_dm_response', user_id: user_id, error: dm_result['error'])
       end
-
-      settings.logger.info('user_notified', user_id: user_id, status_text: status_config['text'])
     else
 
       settings.logger.error('set_status_response', user_id: user_id, error: result['error'])

@@ -8,8 +8,9 @@ require 'time'
 class SlackClient
   TIMEZONE = 'Europe/Oslo'
 
-  def initialize(token)
-    @token = token
+  def initialize(user_token, bot_token)
+    @user_token = user_token
+    @bot_token = bot_token
   end
 
   def set_status(user_id, text, emoji)
@@ -18,7 +19,7 @@ class SlackClient
     http.use_ssl = true
 
     request = Net::HTTP::Post.new(uri)
-    request['Authorization'] = "Bearer #{@token}"
+    request['Authorization'] = "Bearer #{@user_token}"
     request['Content-Type'] = 'application/json; charset=utf-8'
 
     profile = {
@@ -39,7 +40,7 @@ class SlackClient
     http.use_ssl = true
 
     request = Net::HTTP::Post.new(uri)
-    request['Authorization'] = "Bearer #{@token}"
+    request['Authorization'] = "Bearer #{@bot_token}"
     request['Content-Type'] = 'application/json; charset=utf-8'
 
     request.body = {
