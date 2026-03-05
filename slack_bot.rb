@@ -101,13 +101,13 @@ def modal_view(schedule = nil)
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '*Vil du slutte?* Hvis du ikke lenger ønsker å motta daglige statuser kan du avmelde deg.'
+          text: '*Slett data?* Hvis du ikke lenger ønsker å få status satt automatisk kan vi slette dataen din.'
         },
         accessory: {
           type: 'button',
           text: {
             type: 'plain_text',
-            text: 'Avmeld',
+            text: 'Slett meg',
             emoji: true
           },
           style: 'danger',
