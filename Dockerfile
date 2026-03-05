@@ -13,7 +13,7 @@ ENV BUNDLE_WITHOUT="development:test" \
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
-COPY status.yaml status.yaml
+COPY status.yaml migrate_status_yaml.rb ./
 COPY config.ru slack_bot.rb ./
 COPY config/ config/
 COPY lib/ lib/
