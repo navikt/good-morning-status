@@ -8,6 +8,7 @@ require 'date'
 require_relative 'lib/valkey_client'
 require_relative 'lib/slack_client'
 require_relative 'lib/json_logger'
+require_relative 'migrate_status_yaml'
 
 set :port, 4567
 set :valkey, ValkeyClient.new
