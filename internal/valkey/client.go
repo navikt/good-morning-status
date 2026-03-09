@@ -15,6 +15,15 @@ type DaySchedule struct {
 	Emoji string `json:"emoji"`
 }
 
+type UserPrefs struct {
+	DisableDM bool `json:"disable_dm"`
+}
+
+type UserData struct {
+	Schedule map[string]DaySchedule `json:"schedule"`
+	Prefs    UserPrefs              `json:"prefs"`
+}
+
 type Client struct {
 	rdb *redis.Client
 }
@@ -40,30 +49,30 @@ func New() *Client {
 	return &Client{rdb: redis.NewClient(opts)}
 }
 
-func (c *Client) SaveSchedule(ctx context.Context, userID string, schedule map[string]DaySchedule) error {
-	data, err := json.Marshal(schedule)
+func (c *Client) SaveUserData(ctx context.Context, userID string, data UserData) error {
+	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	return c.rdb.Set(ctx, userID, data, 0).Err()
+	return c.rdb.Set(ctx, userID, b, 0).Err()
 }
 
-func (c *Client) GetSchedule(ctx context.Context, userID string) (map[string]DaySchedule, error) {
-	data, err := c.rdb.Get(ctx, userID).Bytes()
+func (c *Client) GetUserData(ctx context.Context, userID string) (UserData, error) {
+	b, err := c.rdb.Get(ctx, userID).Bytes()
 	if err == redis.Nil {
-		return nil, nil
+		return UserData{}, nil
 	}
 	if err != nil {
-		return nil, err
+		return UserData{}, err
 	}
-	var schedule map[string]DaySchedule
-	if err := json.Unmarshal(data, &schedule); err != nil {
-		return nil, err
+	var data UserData
+	if err := json.Unmarshal(b, &data); err != nil {
+		return UserData{}, err
 	}
-	return schedule, nil
+	return data, nil
 }
 
-func (c *Client) DeleteSchedule(ctx context.Context, userID string) error {
+func (c *Client) DeleteUserData(ctx context.Context, userID string) error {
 	return c.rdb.Del(ctx, userID).Err()
 }
 

@@ -71,8 +71,8 @@ func (s *server) handleCommands(w http.ResponseWriter, r *http.Request) {
 	text := strings.TrimSpace(r.FormValue("text"))
 
 	if text == "unsubscribe" {
-		if err := s.valkey.DeleteSchedule(r.Context(), userID); err != nil {
-			s.log.Error("delete_schedule_failed", "user_id", userID, "error", err)
+		if err := s.valkey.DeleteUserData(r.Context(), userID); err != nil {
+			s.log.Error("delete_user_data_failed", "user_id", userID, "error", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -82,12 +82,12 @@ func (s *server) handleCommands(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	schedule, err := s.valkey.GetSchedule(r.Context(), userID)
+	userData, err := s.valkey.GetUserData(r.Context(), userID)
 	if err != nil {
-		s.log.Error("get_schedule_failed", "user_id", userID, "error", err)
+		s.log.Error("get_user_data_failed", "user_id", userID, "error", err)
 	}
 
-	result, err := s.slack.OpenModal(triggerID, modalView(schedule))
+	result, err := s.slack.OpenModal(triggerID, modalView(userData))
 	if err != nil {
 		s.log.Error("open_modal_failed", "error", err)
 	} else if ok, _ := result["ok"].(bool); !ok {
@@ -118,8 +118,23 @@ func (s *server) handleFormSubmission(w http.ResponseWriter, ctx context.Context
 		schedule[day] = valkey.DaySchedule{Text: text, Emoji: emoji}
 	}
 
-	if err := s.valkey.SaveSchedule(ctx, userID, schedule); err != nil {
-		s.log.Error("save_schedule_failed", "user_id", userID, "error", err)
+	prefsBlock, _ := values["preferences"].(map[string]any)
+	disableDMInput, _ := prefsBlock["disable_dm_checkbox"].(map[string]any)
+	selectedOptions, _ := disableDMInput["selected_options"].([]any)
+	disableDM := false
+	for _, opt := range selectedOptions {
+		if o, ok := opt.(map[string]any); ok {
+			if o["value"] == "disable_dm" {
+				disableDM = true
+			}
+		}
+	}
+
+	if err := s.valkey.SaveUserData(ctx, userID, valkey.UserData{
+		Schedule: schedule,
+		Prefs:    valkey.UserPrefs{DisableDM: disableDM},
+	}); err != nil {
+		s.log.Error("save_user_data_failed", "user_id", userID, "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -148,8 +163,8 @@ func (s *server) handleBlockActions(w http.ResponseWriter, ctx context.Context, 
 }
 
 func (s *server) processUnsubscribe(ctx context.Context, userID string) {
-	if err := s.valkey.DeleteSchedule(ctx, userID); err != nil {
-		s.log.Error("delete_schedule_failed", "user_id", userID, "error", err)
+	if err := s.valkey.DeleteUserData(ctx, userID); err != nil {
+		s.log.Error("delete_user_data_failed", "user_id", userID, "error", err)
 	}
 	s.log.Info("user_unsubscribed", "user_id", userID)
 
@@ -175,10 +190,10 @@ func (s *server) handleInternal(w http.ResponseWriter, r *http.Request) {
 
 	var rows strings.Builder
 	for _, userID := range userIDs {
-		schedule, _ := s.valkey.GetSchedule(ctx, userID)
+		userData, _ := s.valkey.GetUserData(ctx, userID)
 		var scheduleHTML string
-		if schedule != nil {
-			data, _ := json.MarshalIndent(schedule, "", "  ")
+		if userData.Schedule != nil {
+			data, _ := json.MarshalIndent(userData.Schedule, "", "  ")
 			scheduleHTML = "<pre>" + html.EscapeString(string(data)) + "</pre>"
 		} else {
 			scheduleHTML = "&mdash;"
@@ -226,12 +241,12 @@ func (s *server) handleApplyStatuses(w http.ResponseWriter, r *http.Request) {
 	applied := 0
 
 	for _, userID := range userIDs {
-		schedule, err := s.valkey.GetSchedule(ctx, userID)
-		if err != nil || schedule == nil {
+		userData, err := s.valkey.GetUserData(ctx, userID)
+		if err != nil || userData.Schedule == nil {
 			continue
 		}
 
-		dayConfig, ok := schedule[today]
+		dayConfig, ok := userData.Schedule[today]
 		if !ok {
 			continue
 		}
@@ -247,6 +262,11 @@ func (s *server) handleApplyStatuses(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		s.log.Info("set_status_response", "user_id", userID)
+
+		if userData.Prefs.DisableDM {
+			applied++
+			continue
+		}
 
 		dmResult, err := s.slack.SendDM(userID, fmt.Sprintf("God morgen! Status satt til %s %s", dayConfig.Emoji, dayConfig.Text))
 		if err != nil {
@@ -298,7 +318,7 @@ func extractEmoji(richText map[string]any) string {
 	return ""
 }
 
-func modalView(schedule map[string]valkey.DaySchedule) map[string]any {
+func modalView(userData valkey.UserData) map[string]any {
 	type day struct{ id, label string }
 	days := []day{
 		{"monday", "Mandag"},
@@ -321,8 +341,8 @@ func modalView(schedule map[string]valkey.DaySchedule) map[string]any {
 
 	for _, d := range days {
 		var ds *valkey.DaySchedule
-		if schedule != nil {
-			if v, ok := schedule[d.id]; ok {
+		if userData.Schedule != nil {
+			if v, ok := userData.Schedule[d.id]; ok {
 				ds = &v
 			}
 		}
@@ -330,6 +350,43 @@ func modalView(schedule map[string]valkey.DaySchedule) map[string]any {
 	}
 
 	blocks = append(blocks,
+		map[string]any{"type": "divider"},
+		map[string]any{
+			"type":     "input",
+			"block_id": "preferences",
+			"optional": true,
+			"label": map[string]any{
+				"type": "plain_text",
+				"text": "Innstillinger",
+			},
+			"element": map[string]any{
+				"type":      "checkboxes",
+				"action_id": "disable_dm_checkbox",
+				"options": []any{
+					map[string]any{
+						"text": map[string]any{
+							"type": "plain_text",
+							"text": "Ikke send meg en DM når status settes",
+						},
+						"value": "disable_dm",
+					},
+				},
+				"initial_options": func() []any {
+					if userData.Prefs.DisableDM {
+						return []any{
+							map[string]any{
+								"text": map[string]any{
+									"type": "plain_text",
+									"text": "Ikke send meg en DM når status settes",
+								},
+								"value": "disable_dm",
+							},
+						}
+					}
+					return nil
+				}(),
+			},
+		},
 		map[string]any{"type": "divider"},
 		map[string]any{
 			"type": "section",
