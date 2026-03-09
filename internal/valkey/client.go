@@ -72,6 +72,30 @@ func (c *Client) GetUserData(ctx context.Context, userID string) (UserData, erro
 	return data, nil
 }
 
+func (c *Client) MigrateUserData(ctx context.Context) error {
+	userIDs, err := c.AllUserIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for _, userID := range userIDs {
+		b, err := c.rdb.Get(ctx, userID).Bytes()
+		if err != nil {
+			continue
+		}
+		var data UserData
+		if err := json.Unmarshal(b, &data); err != nil || data.Schedule != nil {
+			continue
+		}
+		var oldSchedule map[string]DaySchedule
+		if err := json.Unmarshal(b, &oldSchedule); err != nil || len(oldSchedule) == 0 {
+			continue
+		}
+		data.Schedule = oldSchedule
+		_ = c.SaveUserData(ctx, userID, data)
+	}
+	return nil
+}
+
 func (c *Client) DeleteUserData(ctx context.Context, userID string) error {
 	return c.rdb.Del(ctx, userID).Err()
 }
