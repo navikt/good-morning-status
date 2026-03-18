@@ -1,8 +1,11 @@
 # God morgen
 
-Hver morgen kjører det en jobb som setter statusen din i Slack.
-Perfekt hvis du har faste dager på kontoret, og ikke gidder å sette statusen selv.
-Når status er satt, så får du en DM som minner deg på hvilken status som er satt for dagen.
+Hver morgen kjører det en jobb som setter din status i Slack.
+Perfekt når du har faste dager på kontoret, og ikke vil sette statusen selv.
+Hver morgen når status blir satt, så får du en DM som minner deg på hvilken status som er satt for dagen.
+
+Hvis du allerede har en status med en utløpsdato i fremtiden, så vil den ikke bli overskrevet.
+Det betyr at du kan sette en feriestatus, uten at den forsvinner på grunn av denne Slackbotten.
 
 ## Bli med
 

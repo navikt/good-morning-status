@@ -28,6 +28,11 @@ func New(log *slog.Logger, userToken, botToken string) *Client {
 	}
 }
 
+func (c *Client) GetProfile(userID string) (map[string]any, error) {
+	url := fmt.Sprintf("https://slack.com/api/users.profile.get?user=%s", userID)
+	return c.get(url, c.userToken)
+}
+
 func (c *Client) SetStatus(userID, text, emoji string) (map[string]any, error) {
 	body, _ := json.Marshal(map[string]any{
 		"profile": map[string]any{
@@ -60,6 +65,15 @@ func (c *Client) OpenModal(triggerID string, view map[string]any) (map[string]an
 	return c.post("https://slack.com/api/views.open", c.botToken, body)
 }
 
+func (c *Client) get(url, token string) (map[string]any, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	return c.do(req)
+}
+
 func (c *Client) post(url, token string, body []byte) (map[string]any, error) {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
@@ -67,7 +81,10 @@ func (c *Client) post(url, token string, body []byte) (map[string]any, error) {
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	return c.do(req)
+}
 
+func (c *Client) do(req *http.Request) (map[string]any, error) {
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, err

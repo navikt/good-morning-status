@@ -255,6 +255,22 @@ func (s *server) handleApplyStatuses(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		profile, err := s.slack.GetProfile(userID)
+		if err != nil {
+			s.log.Error("get_profile_failed", "user_id", userID, "error", err)
+			continue
+		}
+		if ok, _ := profile["ok"].(bool); ok {
+			if p, ok := profile["profile"].(map[string]any); ok {
+				statusText, _ := p["status_text"].(string)
+				exp, _ := p["status_expiration"].(float64)
+				if statusText != "" && exp > 0 && time.Unix(int64(exp), 0).After(time.Now()) {
+					s.log.Info("status_already_set", "user_id", userID, "status_expiration", int64(exp))
+					continue
+				}
+			}
+		}
+
 		result, err := s.slack.SetStatus(userID, dayConfig.Text, dayConfig.Emoji)
 		if err != nil {
 			s.log.Error("set_status_failed", "user_id", userID, "error", err)
